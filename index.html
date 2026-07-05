@@ -110,6 +110,10 @@
     .stat-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
     .stat{padding:10px;}
     .stat .num{font-size:18px;}
+    #backup-banner{flex-direction:column;align-items:stretch;}
+    #backup-banner-text{min-width:0;}
+    #backup-banner > span:last-child{width:100%;}
+    #backup-banner-btn, #backup-banner-dismiss{flex:1;}
 
     /* Card-style tables instead of horizontal rows */
     table.stackable thead{display:none;}
@@ -147,6 +151,14 @@
   <button data-view="calendar">Calendar</button>
   <button data-view="summary">Summary</button>
 </nav>
+
+<div id="backup-banner" style="display:none;background:var(--accent-light);border:1px solid var(--accent);border-radius:8px;padding:12px 16px;margin-bottom:20px;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+  <span id="backup-banner-text" style="font-size:13px;color:var(--ink);flex:1;min-width:200px;"></span>
+  <span style="display:flex;gap:10px;flex-wrap:wrap;">
+    <button id="backup-banner-btn" style="font-family:inherit;background:var(--accent);color:#fff;border:none;padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;">Back up now</button>
+    <button id="backup-banner-dismiss" style="font-family:inherit;background:transparent;color:var(--muted);border:1px solid var(--line);padding:8px 14px;border-radius:6px;cursor:pointer;font-size:13px;">Not now</button>
+  </span>
+</div>
 
 <!-- ADD VIEW -->
 <div id="view-add" class="card entry-form">
@@ -246,6 +258,22 @@
 
 <script>
 const STORE_KEY = 'visitLog.visits.v1';
+const LAST_BACKUP_KEY = 'visitLog.lastBackup.v1';
+const SNOOZE_KEY = 'visitLog.backupSnoozeUntil.v1';
+const BACKUP_REMINDER_DAYS = 14;
+
+// Ask the browser to exempt this site's data from automatic storage
+// eviction under storage pressure. This does NOT protect against the
+// user manually clearing site data or Safari's inactivity-based purge,
+// but it removes one real, silent cause of data loss.
+(async function ensurePersistentStorage(){
+  try{
+    if(navigator.storage && navigator.storage.persist){
+      const already = await navigator.storage.persisted();
+      if(!already) await navigator.storage.persist();
+    }
+  }catch(e){ /* not supported in this browser — safe to ignore */ }
+})();
 
 function loadVisits(){
   try{
@@ -262,6 +290,29 @@ function saveVisits(v){
   localStorage.setItem(STORE_KEY, JSON.stringify(v));
 }
 let visits = loadVisits();
+
+function daysSinceLastBackup(){
+  const last = localStorage.getItem(LAST_BACKUP_KEY);
+  if(!last) return Infinity;
+  return (Date.now() - Number(last)) / 86400000;
+}
+function markBackedUp(){
+  localStorage.setItem(LAST_BACKUP_KEY, String(Date.now()));
+}
+function renderBackupBanner(){
+  const el = document.getElementById('backup-banner');
+  if(!el) return;
+  if(visits.length === 0){ el.style.display = 'none'; return; }
+  const snoozeUntil = Number(localStorage.getItem(SNOOZE_KEY) || 0);
+  if(Date.now() < snoozeUntil){ el.style.display = 'none'; return; }
+  const days = daysSinceLastBackup();
+  if(days < BACKUP_REMINDER_DAYS){ el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  const label = document.getElementById('backup-banner-text');
+  label.textContent = (days === Infinity)
+    ? "You haven't backed up your log yet. Local browser storage can be cleared unexpectedly — download a backup to be safe."
+    : `It's been ${Math.floor(days)} days since your last backup. Consider downloading a fresh one.`;
+}
 
 // ---------- Navigation ----------
 const views = ['add','log','calendar','summary'];
@@ -670,6 +721,8 @@ function backupJSON(){
   a.href = URL.createObjectURL(blob);
   a.download = `visit-log-backup-${stamp}-${seed}.json`;
   a.click();
+  markBackedUp();
+  renderBackupBanner();
 }
 
 function getRestoreChoice(count){
@@ -914,6 +967,14 @@ function renderSummary(){
 }
 
 renderLog();
+
+// ---------- Backup reminder banner ----------
+document.getElementById('backup-banner-btn').addEventListener('click', backupJSON);
+document.getElementById('backup-banner-dismiss').addEventListener('click', ()=>{
+  document.getElementById('backup-banner').style.display = 'none';
+  localStorage.setItem(SNOOZE_KEY, String(Date.now() + 3 * 86400000)); // snooze 3 days
+});
+renderBackupBanner();
 </script>
 </body>
 </html>
