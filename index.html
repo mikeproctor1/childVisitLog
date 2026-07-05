@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Visit Log</title>
+<style>
+  :root{
+    --bg:#f6f5f3; --card:#ffffff; --ink:#26241f; --muted:#7a766c;
+    --accent:#8a6f4f; --accent-light:#e8dfd1; --line:#e3dfd6; --good:#5b7a5e;
+  }
+  *{box-sizing:border-box;}
+  body{font-family:Georgia,'Times New Roman',serif;background:var(--bg);color:var(--ink);margin:0;padding:24px;}
+  h1{font-weight:normal;letter-spacing:.5px;margin:0 0 4px;}
+  .sub{color:var(--muted);margin:0 0 24px;font-size:14px;}
+  nav{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+  nav button{
+    font-family:inherit;background:var(--card);border:1px solid var(--line);
+    padding:9px 16px;border-radius:6px;cursor:pointer;font-size:14px;color:var(--ink);
+  }
+  nav button.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:20px;margin-bottom:20px;}
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px;margin-top:12px;}
+  input,select,textarea{
+    width:100%;font-family:inherit;font-size:14px;padding:8px;border:1px solid var(--line);
+    border-radius:5px;background:#fdfcfb;color:var(--ink);
+  }
+  textarea{resize:vertical;min-height:50px;}
+  .row{display:flex;gap:16px;flex-wrap:wrap;}
+  .row > div{flex:1;min-width:160px;}
+  button.primary{
+    margin-top:18px;background:var(--accent);color:#fff;border:none;padding:10px 20px;
+    border-radius:6px;cursor:pointer;font-size:14px;font-family:inherit;
+  }
+  button.secondary{
+    margin-top:18px;background:transparent;color:var(--accent);border:1px solid var(--accent);
+    padding:10px 20px;border-radius:6px;cursor:pointer;font-size:14px;font-family:inherit;margin-left:8px;
+  }
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);}
+  th{color:var(--muted);font-weight:normal;font-size:12px;text-transform:uppercase;letter-spacing:.5px;}
+  tr:hover td{background:#faf8f5;}
+  .pill{display:inline-block;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:10px;font-size:12px;}
+  .del{color:#a44;cursor:pointer;font-size:13px;}
+  .edit{color:var(--accent);cursor:pointer;font-size:13px;}
+  tr.editing td{background:#faf8f5;}
+  .edit-row input, .edit-row textarea{font-size:13px;padding:5px;}
+  .edit-row .edit-actions{display:flex;gap:8px;align-items:center;}
+  .edit-row .save-edit{color:var(--good);cursor:pointer;font-size:13px;}
+  .edit-row .cancel-edit{color:var(--muted);cursor:pointer;font-size:13px;}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-top:10px;}
+  .stat{background:#faf8f5;border:1px solid var(--line);border-radius:8px;padding:14px;}
+  .stat .num{font-size:22px;color:var(--accent);}
+  .stat .label{font-size:12px;color:var(--muted);}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:14px;}
+  .cal-head{font-size:11px;color:var(--muted);text-align:center;text-transform:uppercase;}
+  .cal-cell{min-height:70px;border:1px solid var(--line);border-radius:6px;padding:5px;font-size:12px;background:#fdfcfb;}
+  .cal-cell.empty{background:transparent;border:none;}
+  .cal-cell .daynum{color:var(--muted);font-size:11px;}
+  .cal-cell.has-visit{background:var(--accent-light);}
+  .cal-cell .vtime{display:block;color:var(--accent);font-size:11px;margin-top:2px;}
+  .cal-nav{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
+  .cal-nav button{background:none;border:1px solid var(--line);border-radius:5px;padding:5px 12px;cursor:pointer;font-family:inherit;}
+  .empty-msg{color:var(--muted);font-style:italic;padding:20px;text-align:center;}
+  select#periodType{width:auto;display:inline-block;}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<h1>Visit Log</h1>
+<p class="sub">A private record of visits, kept locally in this browser.</p>
+
+<nav>
+  <button data-view="add" class="active">+ Add Visit</button>
+  <button data-view="log">Log</button>
+  <button data-view="calendar">Calendar</button>
+  <button data-view="summary">Summary</button>
+</nav>
+
+<!-- ADD VIEW -->
+<div id="view-add" class="card entry-form">
+  <div class="row">
+    <div>
+      <label>Start date</label>
+      <input type="date" id="f-start-date">
+    </div>
+    <div>
+      <label>Start time</label>
+      <input type="time" id="f-start">
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <label>End date</label>
+      <input type="date" id="f-end-date">
+    </div>
+    <div>
+      <label>End time</label>
+      <input type="time" id="f-end">
+    </div>
+  </div>
+  <label style="margin-top:8px;font-size:12px;color:var(--muted);">Leave end date the same as start date for a same-day visit, or set it later for visits spanning multiple days (e.g. a stay-over).</label>
+  <label>Notes (optional)</label>
+  <textarea id="f-notes" placeholder="e.g. park visit, dinner, school pickup..."></textarea>
+  <button class="primary" id="add-btn">Save Visit</button>
+  <span id="add-msg" style="margin-left:12px;color:var(--good);font-size:13px;"></span>
+</div>
+
+<!-- LOG VIEW -->
+<div id="view-log" class="card" style="display:none;">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <strong>Full Log</strong>
+    <div>
+      <button class="secondary" id="print-btn" style="margin-top:0;">Download PDF</button>
+      <button class="secondary" id="export-btn" style="margin-top:0;">Export CSV</button>
+      <button class="secondary" id="backup-btn" style="margin-top:0;">Backup (JSON)</button>
+      <button class="secondary" id="restore-btn" style="margin-top:0;">Restore from Backup</button>
+      <input type="file" id="restore-file" accept="application/json" style="display:none;">
+    </div>
+  </div>
+  <div id="restore-msg" style="font-size:13px;margin-top:8px;"></div>
+  <table id="log-table">
+    <thead>
+      <tr><th>Dates</th><th>Start</th><th>End</th><th>Duration</th><th>Notes</th><th></th></tr>
+    </thead>
+    <tbody id="log-body"></tbody>
+  </table>
+  <div id="log-empty" class="empty-msg" style="display:none;">No visits logged yet.</div>
+</div>
+
+<!-- CALENDAR VIEW -->
+<div id="view-calendar" class="card" style="display:none;">
+  <div class="cal-nav">
+    <button id="cal-prev">&larr; Prev</button>
+    <strong id="cal-title"></strong>
+    <button id="cal-next">Next &rarr;</button>
+  </div>
+  <div class="cal-grid" id="cal-grid"></div>
+</div>
+
+<!-- SUMMARY VIEW -->
+<div id="view-summary" class="card" style="display:none;">
+  <strong>Accumulated Visit Time</strong>
+  <div style="margin-top:10px;">
+    <label style="display:inline-block;margin-right:8px;">Group by</label>
+    <select id="periodType">
+      <option value="week">Week</option>
+      <option value="month" selected>Month</option>
+      <option value="year">Year</option>
+    </select>
+  </div>
+  <div class="stat-grid" id="totals-grid"></div>
+  <table style="margin-top:20px;">
+    <thead><tr><th>Period</th><th>Visits</th><th>Total Time</th></tr></thead>
+    <tbody id="summary-body"></tbody>
+  </table>
+</div>
+
+<!-- RESTORE CHOICE MODAL -->
+<div id="restore-modal" style="display:none;position:fixed;inset:0;background:rgba(38,36,31,0.5);z-index:50;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border-radius:8px;padding:24px;max-width:420px;width:90%;font-family:Georgia,'Times New Roman',serif;">
+    <strong id="modal-title">Restore Backup</strong>
+    <p id="modal-text" style="font-size:14px;color:var(--muted);margin:10px 0 18px;"></p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button id="modal-merge" class="primary" style="margin-top:0;">Merge with current log</button>
+      <button id="modal-replace" class="secondary" style="margin-top:0;">Replace current log</button>
+      <button id="modal-cancel" class="secondary" style="margin-top:0;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const STORE_KEY = 'visitLog.visits.v1';
+
+function loadVisits(){
+  try{
+    const data = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
+    return data.map(migrateVisitStored);
+  }
+  catch(e){ return []; }
+}
+function migrateVisitStored(v){
+  if(!v.endDate) v.endDate = v.date;
+  return v;
+}
+function saveVisits(v){
+  localStorage.setItem(STORE_KEY, JSON.stringify(v));
+}
+let visits = loadVisits();
+
+// ---------- Navigation ----------
+const views = ['add','log','calendar','summary'];
+document.querySelectorAll('nav button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const v = btn.dataset.view;
+    views.forEach(x=> document.getElementById('view-'+x).style.display = (x===v?'block':'none'));
+    if(v==='log') renderLog();
+    if(v==='calendar') renderCalendar();
+    if(v==='summary') renderSummary();
+  });
+});
+
+// default dates = today
+document.getElementById('f-start-date').valueAsDate = new Date();
+document.getElementById('f-end-date').valueAsDate = new Date();
+
+// ---------- Add visit ----------
+function toDateTime(dateStr, timeStr){
+  return new Date(dateStr+'T'+timeStr+':00');
+}
+function durationMinutesFull(v){
+  const startDT = toDateTime(v.date, v.start);
+  let endDT = toDateTime(v.endDate || v.date, v.end);
+  if(endDT < startDT) endDT = new Date(endDT.getTime() + 24*60*60*1000); // guard against bad data
+  return Math.round((endDT - startDT) / 60000);
+}
+function fmtDuration(mins){
+  const h = Math.floor(mins/60), m = mins%60;
+  if(h===0) return m+'m';
+  if(m===0) return h+'h';
+  return h+'h '+m+'m';
+}
+
+document.getElementById('add-btn').addEventListener('click', ()=>{
+  const date = document.getElementById('f-start-date').value;
+  const start = document.getElementById('f-start').value;
+  const endDate = document.getElementById('f-end-date').value || date;
+  const end = document.getElementById('f-end').value;
+  const notes = document.getElementById('f-notes').value.trim();
+  const msg = document.getElementById('add-msg');
+
+  if(!date || !start || !end){
+    msg.style.color = '#a44';
+    msg.textContent = 'Please fill in start date, start time and end time.';
+    return;
+  }
+  if(toDateTime(endDate, end) < toDateTime(date, start)){
+    msg.style.color = '#a44';
+    msg.textContent = 'End date/time must be after the start date/time.';
+    return;
+  }
+  visits.push({
+    id: Date.now()+'-'+Math.random().toString(36).slice(2,7),
+    date, start, endDate, end, notes
+  });
+  visits.sort((a,b)=> (a.date+a.start).localeCompare(b.date+b.start));
+  saveVisits(visits);
+
+  msg.style.color = 'var(--good)';
+  msg.textContent = 'Visit saved.';
+  document.getElementById('f-notes').value='';
+  setTimeout(()=> msg.textContent='', 2000);
+});
+
+// ---------- Log view ----------
+let editingId = null;
+
+function renderLog(){
+  const body = document.getElementById('log-body');
+  const empty = document.getElementById('log-empty');
+  body.innerHTML = '';
+  if(visits.length===0){
+    empty.style.display='block';
+    return;
+  }
+  empty.style.display='none';
+  visits.slice().reverse().forEach(v=>{
+    if(v.id === editingId){
+      body.appendChild(buildEditRow(v));
+      return;
+    }
+    const dur = durationMinutesFull(v);
+    const spansDays = v.endDate && v.endDate !== v.date;
+    const dateLabel = spansDays
+      ? `${formatDateNice(v.date)} <span style="color:var(--muted);">&rarr;</span> ${formatDateNice(v.endDate)}`
+      : formatDateNice(v.date);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${dateLabel}</td>
+      <td>${v.start}</td>
+      <td>${v.end}</td>
+      <td><span class="pill">${fmtDuration(dur)}</span></td>
+      <td>${escapeHtml(v.notes||'')}</td>
+      <td><span class="edit" data-id="${v.id}">edit</span> · <span class="del" data-id="${v.id}">delete</span></td>
+    `;
+    body.appendChild(tr);
+  });
+  body.querySelectorAll('.del').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      if(confirm('Delete this visit entry?')){
+        visits = visits.filter(v=>v.id !== el.dataset.id);
+        saveVisits(visits);
+        renderLog();
+      }
+    });
+  });
+  body.querySelectorAll('.edit').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      editingId = el.dataset.id;
+      renderLog();
+    });
+  });
+}
+
+function buildEditRow(v){
+  const tr = document.createElement('tr');
+  tr.className = 'editing';
+  tr.innerHTML = `
+    <td colspan="6">
+      <div class="edit-row" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+        <div>
+          <label style="margin-top:0;">Start date</label>
+          <input type="date" class="ed-date" value="${v.date}">
+        </div>
+        <div>
+          <label style="margin-top:0;">Start time</label>
+          <input type="time" class="ed-start" value="${v.start}">
+        </div>
+        <div>
+          <label style="margin-top:0;">End date</label>
+          <input type="date" class="ed-end-date" value="${v.endDate || v.date}">
+        </div>
+        <div>
+          <label style="margin-top:0;">End time</label>
+          <input type="time" class="ed-end" value="${v.end}">
+        </div>
+        <div style="flex:1;min-width:160px;">
+          <label style="margin-top:0;">Notes</label>
+          <input type="text" class="ed-notes" value="${escapeHtml(v.notes||'')}">
+        </div>
+        <div class="edit-actions">
+          <span class="save-edit">save</span>
+          <span class="cancel-edit">cancel</span>
+        </div>
+      </div>
+    </td>
+  `;
+  tr.querySelector('.save-edit').addEventListener('click', ()=>{
+    const date = tr.querySelector('.ed-date').value;
+    const start = tr.querySelector('.ed-start').value;
+    const endDate = tr.querySelector('.ed-end-date').value || date;
+    const end = tr.querySelector('.ed-end').value;
+    const notes = tr.querySelector('.ed-notes').value.trim();
+    if(!date || !start || !end){
+      alert('Please fill in start date, start time and end time.');
+      return;
+    }
+    if(toDateTime(endDate, end) < toDateTime(date, start)){
+      alert('End date/time must be after the start date/time.');
+      return;
+    }
+    const target = visits.find(x=>x.id === v.id);
+    target.date = date;
+    target.start = start;
+    target.endDate = endDate;
+    target.end = end;
+    target.notes = notes;
+    visits.sort((a,b)=> (a.date+a.start).localeCompare(b.date+b.start));
+    saveVisits(visits);
+    editingId = null;
+    renderLog();
+  });
+  tr.querySelector('.cancel-edit').addEventListener('click', ()=>{
+    editingId = null;
+    renderLog();
+  });
+  return tr;
+}
+function formatDateNice(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  return d.toLocaleDateString(undefined,{weekday:'short', year:'numeric', month:'short', day:'numeric'});
+}
+function escapeHtml(s){
+  return s.replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+document.getElementById('print-btn').addEventListener('click', downloadPDF);
+document.getElementById('export-btn').addEventListener('click', exportCSV);
+document.getElementById('backup-btn').addEventListener('click', backupJSON);
+document.getElementById('restore-btn').addEventListener('click', ()=> document.getElementById('restore-file').click());
+document.getElementById('restore-file').addEventListener('change', handleRestoreFile);
+
+function downloadPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
+
+  const PW = 210, PH = 297;
+  const ML = 18, MR = 18, MT = 20, MB = 20;
+  const CW = PW - ML - MR;
+
+  // Colours (RGB)
+  const INK    = [38, 36, 31];
+  const MUTED  = [122, 118, 108];
+  const ACCENT = [138, 111, 79];
+  const LINE   = [227, 223, 214];
+  const ACBG   = [232, 223, 209];
+
+  // Column layout: Date | Start | End | Duration | Notes
+  const cols = [
+    { label:'Date',     w: 46 },
+    { label:'Start',    w: 20 },
+    { label:'End',      w: 20 },
+    { label:'Duration', w: 22 },
+    { label:'Notes',    w: CW - 46 - 20 - 20 - 22 },
+  ];
+
+  const generatedAt = new Date().toLocaleDateString(undefined,{
+    weekday:'long', year:'numeric', month:'long', day:'numeric'
+  });
+
+  let pageNum = 1;
+  let y = MT;
+
+  function addPageChrome(){
+    // Header bar
+    doc.setFillColor(...ACBG);
+    doc.rect(ML, 10, CW, 7, 'F');
+    doc.setFontSize(9);
+    doc.setTextColor(...ACCENT);
+    doc.setFont('helvetica','bold');
+    doc.text('VISIT LOG', ML + 2, 15.5);
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(...MUTED);
+    doc.text(`Generated ${generatedAt}`, PW - MR, 15.5, {align:'right'});
+
+    // Footer
+    doc.setDrawColor(...LINE);
+    doc.setLineWidth(0.3);
+    doc.line(ML, PH - MB + 3, PW - MR, PH - MB + 3);
+    doc.setFontSize(8);
+    doc.setTextColor(...MUTED);
+    doc.setFont('helvetica','normal');
+    doc.text(`Page ${pageNum}`, PW / 2, PH - MB + 8, {align:'center'});
+  }
+
+  function drawTableHeader(yPos){
+    doc.setFillColor(...ACBG);
+    doc.rect(ML, yPos, CW, 7, 'F');
+    let x = ML;
+    doc.setFontSize(8);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(...ACCENT);
+    cols.forEach(col=>{
+      doc.text(col.label.toUpperCase(), x + 2, yPos + 5);
+      x += col.w;
+    });
+    return yPos + 7;
+  }
+
+  function ensureSpace(needed){
+    if(y + needed > PH - MB - 12){
+      doc.addPage();
+      pageNum++;
+      addPageChrome();
+      y = MT + 10;
+      y = drawTableHeader(y);
+    }
+  }
+
+  // ---- Cover / title area ----
+  addPageChrome();
+
+  doc.setFontSize(22);
+  doc.setFont('helvetica','normal');
+  doc.setTextColor(...INK);
+  doc.text('Visit Log', ML, y + 10);
+
+  doc.setFontSize(10);
+  doc.setTextColor(...MUTED);
+  doc.text(`${visits.length} entr${visits.length===1?'y':'ies'} · ${generatedAt}`, ML, y + 18);
+
+  y += 28;
+
+  // Summary stats strip
+  const totalMins = visits.reduce((s,v)=>s+durationMinutesFull(v),0);
+  const stats = [
+    ['Total visits', visits.length],
+    ['Total time', fmtDuration(totalMins)],
+    ['Avg per visit', fmtDuration(visits.length ? Math.round(totalMins/visits.length) : 0)],
+    ['First visit', visits.length ? visits[0].date : '—'],
+    ['Latest visit', visits.length ? visits[visits.length-1].date : '—'],
+  ];
+  const sw = CW / stats.length;
+  doc.setFillColor(...ACBG);
+  doc.rect(ML, y, CW, 14, 'F');
+  stats.forEach(([lbl, val], i)=>{
+    const sx = ML + i * sw;
+    doc.setFontSize(7);
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(...MUTED);
+    doc.text(lbl.toUpperCase(), sx + sw/2, y + 4.5, {align:'center'});
+    doc.setFontSize(9);
+    doc.setFont('helvetica','bold');
+    doc.setTextColor(...ACCENT);
+    doc.text(String(val), sx + sw/2, y + 10.5, {align:'center'});
+  });
+  y += 20;
+
+  // ---- Table ----
+  y = drawTableHeader(y);
+
+  const sorted = visits.slice().sort((a,b)=> (a.date+a.start).localeCompare(b.date+b.start));
+
+  sorted.forEach((v, idx)=>{
+    const dur = durationMinutesFull(v);
+    const spansDays = v.endDate && v.endDate !== v.date;
+    const dateLabel = spansDays
+      ? `${formatDateNice(v.date)}\n→ ${formatDateNice(v.endDate)}`
+      : formatDateNice(v.date);
+    const notesText = v.notes || '';
+
+    // Measure row height
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica','normal');
+    const noteLines = doc.splitTextToSize(notesText, cols[4].w - 4);
+    const dateLines = doc.splitTextToSize(dateLabel, cols[0].w - 4);
+    const lineH = 4.5;
+    const rowH = Math.max(dateLines.length, noteLines.length) * lineH + 4;
+
+    ensureSpace(rowH);
+
+    // Alternate row background
+    if(idx % 2 === 0){
+      doc.setFillColor(250, 248, 245);
+      doc.rect(ML, y, CW, rowH, 'F');
+    }
+
+    // Row content
+    let x = ML;
+    doc.setTextColor(...INK);
+
+    // Date
+    doc.setFont('helvetica', spansDays ? 'bold' : 'normal');
+    doc.text(dateLines, x + 2, y + lineH);
+    x += cols[0].w;
+
+    // Start
+    doc.setFont('helvetica','normal');
+    doc.text(v.start, x + 2, y + lineH);
+    x += cols[1].w;
+
+    // End
+    doc.text(v.end, x + 2, y + lineH);
+    x += cols[2].w;
+
+    // Duration pill text
+    doc.setTextColor(...ACCENT);
+    doc.setFont('helvetica','bold');
+    doc.text(fmtDuration(dur), x + 2, y + lineH);
+    x += cols[3].w;
+
+    // Notes
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(...MUTED);
+    doc.text(noteLines, x + 2, y + lineH);
+
+    // Row bottom line
+    doc.setDrawColor(...LINE);
+    doc.setLineWidth(0.2);
+    doc.line(ML, y + rowH, ML + CW, y + rowH);
+
+    y += rowH;
+  });
+
+  // ---- Save ----
+  const now = new Date();
+  const stamp = now.getFullYear() +
+    String(now.getMonth()+1).padStart(2,'0') +
+    String(now.getDate()).padStart(2,'0') + '-' +
+    String(now.getHours()).padStart(2,'0') +
+    String(now.getMinutes()).padStart(2,'0') +
+    String(now.getSeconds()).padStart(2,'0');
+  const seed = Math.random().toString(36).slice(2,8);
+  doc.save(`visit-log-${stamp}-${seed}.pdf`);
+}
+
+function backupJSON(){
+  const payload = {
+    app: 'visit-log',
+    exportedAt: new Date().toISOString(),
+    visits: visits
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  const now = new Date();
+  const stamp = now.getFullYear() +
+    String(now.getMonth()+1).padStart(2,'0') +
+    String(now.getDate()).padStart(2,'0') + '-' +
+    String(now.getHours()).padStart(2,'0') +
+    String(now.getMinutes()).padStart(2,'0') +
+    String(now.getSeconds()).padStart(2,'0');
+  const seed = Math.random().toString(36).slice(2,8);
+  a.href = URL.createObjectURL(blob);
+  a.download = `visit-log-backup-${stamp}-${seed}.json`;
+  a.click();
+}
+
+function getRestoreChoice(count){
+  const modal = document.getElementById('restore-modal');
+  const text = document.getElementById('modal-text');
+  text.textContent = `Found ${count} visit entr${count===1?'y':'ies'} in this backup. Merge adds new entries to your current log and skips duplicates. Replace wipes your current log and loads only the backup.`;
+  modal.style.display = 'flex';
+  return new Promise(resolve=>{
+    const merge = document.getElementById('modal-merge');
+    const replace = document.getElementById('modal-replace');
+    const cancel = document.getElementById('modal-cancel');
+    function cleanup(choice){
+      modal.style.display = 'none';
+      merge.removeEventListener('click', onMerge);
+      replace.removeEventListener('click', onReplace);
+      cancel.removeEventListener('click', onCancel);
+      resolve(choice);
+    }
+    function onMerge(){ cleanup('merge'); }
+    function onReplace(){ cleanup('replace'); }
+    function onCancel(){ cleanup('cancel'); }
+    merge.addEventListener('click', onMerge);
+    replace.addEventListener('click', onReplace);
+    cancel.addEventListener('click', onCancel);
+  });
+}
+
+async function handleRestoreFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const msg = document.getElementById('restore-msg');
+  const reader = new FileReader();
+  reader.onload = async (evt)=>{
+    let data;
+    try{
+      data = JSON.parse(evt.target.result);
+    }catch(err){
+      msg.style.color = '#a44';
+      msg.textContent = 'Could not read that file — it does not look like a valid backup.';
+      return;
+    }
+    const incoming = Array.isArray(data) ? data : data.visits;
+    if(!Array.isArray(incoming)){
+      msg.style.color = '#a44';
+      msg.textContent = 'That file does not contain a recognisable visit list.';
+      return;
+    }
+    const valid = incoming.filter(v => v && v.date && v.start && v.end);
+    if(valid.length === 0){
+      msg.style.color = '#a44';
+      msg.textContent = 'No valid visit entries found in that file.';
+      return;
+    }
+
+    const mode = await getRestoreChoice(valid.length);
+    if(mode === 'cancel'){
+      msg.style.color = 'var(--muted)';
+      msg.textContent = 'Restore cancelled.';
+      e.target.value = '';
+      return;
+    }
+
+    if(mode === 'replace'){
+      visits = valid.map(v => ({
+        id: v.id || (Date.now()+'-'+Math.random().toString(36).slice(2,7)),
+        date: v.date, start: v.start, endDate: v.endDate||v.date, end: v.end, notes: v.notes || ''
+      }));
+    } else {
+      const existingKeys = new Set(visits.map(v => v.date+v.start+(v.endDate||v.date)+v.end+(v.notes||'')));
+      valid.forEach(v=>{
+        const key = v.date+v.start+(v.endDate||v.date)+v.end+(v.notes||'');
+        if(!existingKeys.has(key)){
+          visits.push({
+            id: v.id || (Date.now()+'-'+Math.random().toString(36).slice(2,7)),
+            date: v.date, start: v.start, endDate: v.endDate||v.date, end: v.end, notes: v.notes || ''
+          });
+          existingKeys.add(key);
+        }
+      });
+    }
+
+    visits.sort((a,b)=> (a.date+a.start).localeCompare(b.date+b.start));
+    saveVisits(visits);
+    renderLog();
+
+    msg.style.color = 'var(--good)';
+    msg.textContent = mode === 'replace'
+      ? `Log replaced with ${visits.length} entries from backup.`
+      : `Backup merged. Log now has ${visits.length} entries.`;
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function exportCSV(){
+  let csv = 'Start Date,Start Time,End Date,End Time,Duration (min),Notes\n';
+  visits.forEach(v=>{
+    const dur = durationMinutesFull(v);
+    const notes = (v.notes||'').replace(/"/g,'""');
+    csv += `${v.date},${v.start},${v.endDate||v.date},${v.end},${dur},"${notes}"\n`;
+  });
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'visit-log.csv';
+  a.click();
+}
+
+// ---------- Calendar view ----------
+let calDate = new Date();
+calDate.setDate(1);
+
+function renderCalendar(){
+  const grid = document.getElementById('cal-grid');
+  const title = document.getElementById('cal-title');
+  grid.innerHTML = '';
+  const year = calDate.getFullYear(), month = calDate.getMonth();
+  title.textContent = calDate.toLocaleDateString(undefined,{month:'long', year:'numeric'});
+
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d=>{
+    const h = document.createElement('div');
+    h.className='cal-head'; h.textContent=d;
+    grid.appendChild(h);
+  });
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+
+  // map date -> visits, expanding multi-day spans across all covered days
+  const byDate = {};
+  function addToDate(dateStr, v, label){
+    if(!byDate[dateStr]) byDate[dateStr]=[];
+    byDate[dateStr].push({v, label});
+  }
+  visits.forEach(v=>{
+    const start = new Date(v.date+'T00:00:00');
+    const end = new Date((v.endDate||v.date)+'T00:00:00');
+    let cur = new Date(start);
+    let dayIndex = 0;
+    const totalDays = Math.round((end-start)/86400000)+1;
+    while(cur <= end){
+      const ds = cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
+      let label;
+      if(totalDays===1) label = v.start+'–'+v.end;
+      else if(dayIndex===0) label = 'from '+v.start;
+      else if(cur.getTime()===end.getTime()) label = 'until '+v.end;
+      else label = '(overnight)';
+      addToDate(ds, v, label);
+      cur.setDate(cur.getDate()+1);
+      dayIndex++;
+    }
+  });
+
+  for(let i=0;i<firstDay;i++){
+    const c = document.createElement('div');
+    c.className='cal-cell empty';
+    grid.appendChild(c);
+  }
+  for(let day=1; day<=daysInMonth; day++){
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dayEntries = byDate[dateStr] || [];
+    const c = document.createElement('div');
+    c.className = 'cal-cell' + (dayEntries.length ? ' has-visit' : '');
+    let html = `<div class="daynum">${day}</div>`;
+    dayEntries.forEach(({label})=>{
+      html += `<span class="vtime">${label}</span>`;
+    });
+    c.innerHTML = html;
+    grid.appendChild(c);
+  }
+}
+document.getElementById('cal-prev').addEventListener('click', ()=>{
+  calDate.setMonth(calDate.getMonth()-1);
+  renderCalendar();
+});
+document.getElementById('cal-next').addEventListener('click', ()=>{
+  calDate.setMonth(calDate.getMonth()+1);
+  renderCalendar();
+});
+
+// ---------- Summary view ----------
+function getWeekKey(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  const day = (d.getDay()+6)%7; // Monday=0
+  const monday = new Date(d);
+  monday.setDate(d.getDate()-day);
+  const y = monday.getFullYear();
+  const onejan = new Date(y,0,1);
+  const weekNum = Math.ceil((((monday - onejan) / 86400000) + onejan.getDay()+1)/7);
+  return `${y} Week ${weekNum} (starting ${monday.toLocaleDateString(undefined,{month:'short',day:'numeric'})})`;
+}
+function getMonthKey(dateStr){
+  const d = new Date(dateStr+'T00:00:00');
+  return d.toLocaleDateString(undefined,{month:'long', year:'numeric'});
+}
+function getYearKey(dateStr){
+  return dateStr.slice(0,4);
+}
+
+document.getElementById('periodType').addEventListener('change', renderSummary);
+
+function renderSummary(){
+  const type = document.getElementById('periodType').value;
+  const keyFn = type==='week' ? getWeekKey : type==='year' ? getYearKey : getMonthKey;
+
+  const groups = {};
+  visits.forEach(v=>{
+    const key = keyFn(v.date);
+    const dur = durationMinutesFull(v);
+    if(!groups[key]) groups[key] = {count:0, mins:0, sortKey:v.date};
+    groups[key].count++;
+    groups[key].mins += dur;
+    if(v.date > groups[key].sortKey) groups[key].sortKey = v.date;
+  });
+
+  const entries = Object.entries(groups).sort((a,b)=> b[1].sortKey.localeCompare(a[1].sortKey));
+
+  // top stats
+  const totalVisits = visits.length;
+  const totalMins = visits.reduce((s,v)=> s+durationMinutesFull(v), 0);
+  const avgMins = totalVisits ? Math.round(totalMins/totalVisits) : 0;
+  const lastVisit = visits.length ? visits[visits.length-1].date : '—';
+
+  document.getElementById('totals-grid').innerHTML = `
+    <div class="stat"><div class="num">${totalVisits}</div><div class="label">Total visits</div></div>
+    <div class="stat"><div class="num">${fmtDuration(totalMins)}</div><div class="label">Total time</div></div>
+    <div class="stat"><div class="num">${fmtDuration(avgMins)}</div><div class="label">Average per visit</div></div>
+    <div class="stat"><div class="num">${lastVisit==='—'?'—':formatDateNice(lastVisit)}</div><div class="label">Most recent visit</div></div>
+  `;
+
+  const body = document.getElementById('summary-body');
+  body.innerHTML = '';
+  if(entries.length===0){
+    body.innerHTML = '<tr><td colspan="3" class="empty-msg">No data yet.</td></tr>';
+    return;
+  }
+  entries.forEach(([key, g])=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${key}</td><td>${g.count}</td><td>${fmtDuration(g.mins)}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+renderLog();
+</script>
+</body>
+</html>
