@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
 <title>Visit Log</title>
 <style>
   :root{
@@ -9,59 +10,121 @@
     --accent:#8a6f4f; --accent-light:#e8dfd1; --line:#e3dfd6; --good:#5b7a5e;
   }
   *{box-sizing:border-box;}
-  body{font-family:Georgia,'Times New Roman',serif;background:var(--bg);color:var(--ink);margin:0;padding:24px;}
-  h1{font-weight:normal;letter-spacing:.5px;margin:0 0 4px;}
+  html{-webkit-text-size-adjust:100%;}
+  body{font-family:Georgia,'Times New Roman',serif;background:var(--bg);color:var(--ink);margin:0;padding:24px;max-width:1000px;margin-left:auto;margin-right:auto;}
+  h1{font-weight:normal;letter-spacing:.5px;margin:0 0 4px;font-size:28px;}
   .sub{color:var(--muted);margin:0 0 24px;font-size:14px;}
   nav{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
   nav button{
     font-family:inherit;background:var(--card);border:1px solid var(--line);
-    padding:9px 16px;border-radius:6px;cursor:pointer;font-size:14px;color:var(--ink);
+    padding:10px 16px;border-radius:6px;cursor:pointer;font-size:14px;color:var(--ink);
+    -webkit-tap-highlight-color:transparent;
   }
   nav button.active{background:var(--accent);color:#fff;border-color:var(--accent);}
   .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:20px;margin-bottom:20px;}
   label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px;margin-top:12px;}
   input,select,textarea{
-    width:100%;font-family:inherit;font-size:14px;padding:8px;border:1px solid var(--line);
+    width:100%;font-family:inherit;font-size:16px;padding:10px 8px;border:1px solid var(--line);
     border-radius:5px;background:#fdfcfb;color:var(--ink);
   }
   textarea{resize:vertical;min-height:50px;}
   .row{display:flex;gap:16px;flex-wrap:wrap;}
   .row > div{flex:1;min-width:160px;}
   button.primary{
-    margin-top:18px;background:var(--accent);color:#fff;border:none;padding:10px 20px;
-    border-radius:6px;cursor:pointer;font-size:14px;font-family:inherit;
+    margin-top:18px;background:var(--accent);color:#fff;border:none;padding:12px 20px;
+    border-radius:6px;cursor:pointer;font-size:15px;font-family:inherit;
   }
   button.secondary{
     margin-top:18px;background:transparent;color:var(--accent);border:1px solid var(--accent);
-    padding:10px 20px;border-radius:6px;cursor:pointer;font-size:14px;font-family:inherit;margin-left:8px;
+    padding:10px 18px;border-radius:6px;cursor:pointer;font-size:14px;font-family:inherit;
   }
+  .log-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+  .log-actions .btn-group{display:flex;gap:8px;flex-wrap:wrap;}
+  .log-actions .btn-group button{margin-top:0;}
+  .table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
   table{width:100%;border-collapse:collapse;font-size:14px;}
   th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);}
   th{color:var(--muted);font-weight:normal;font-size:12px;text-transform:uppercase;letter-spacing:.5px;}
   tr:hover td{background:#faf8f5;}
   .pill{display:inline-block;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:10px;font-size:12px;}
-  .del{color:#a44;cursor:pointer;font-size:13px;}
-  .edit{color:var(--accent);cursor:pointer;font-size:13px;}
+  .del{color:#a44;cursor:pointer;font-size:13px;padding:4px 2px;}
+  .edit{color:var(--accent);cursor:pointer;font-size:13px;padding:4px 2px;}
   tr.editing td{background:#faf8f5;}
-  .edit-row input, .edit-row textarea{font-size:13px;padding:5px;}
-  .edit-row .edit-actions{display:flex;gap:8px;align-items:center;}
-  .edit-row .save-edit{color:var(--good);cursor:pointer;font-size:13px;}
-  .edit-row .cancel-edit{color:var(--muted);cursor:pointer;font-size:13px;}
-  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-top:10px;}
+  .edit-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
+  .edit-row input, .edit-row textarea{font-size:14px;padding:7px 6px;}
+  .edit-row .edit-actions{display:flex;gap:14px;align-items:center;}
+  .edit-row .save-edit{color:var(--good);cursor:pointer;font-size:14px;padding:4px 2px;}
+  .edit-row .cancel-edit{color:var(--muted);cursor:pointer;font-size:14px;padding:4px 2px;}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-top:10px;}
   .stat{background:#faf8f5;border:1px solid var(--line);border-radius:8px;padding:14px;}
-  .stat .num{font-size:22px;color:var(--accent);}
+  .stat .num{font-size:22px;color:var(--accent);word-break:break-word;}
   .stat .label{font-size:12px;color:var(--muted);}
-  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:14px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:14px;}
   .cal-head{font-size:11px;color:var(--muted);text-align:center;text-transform:uppercase;}
-  .cal-cell{min-height:70px;border:1px solid var(--line);border-radius:6px;padding:5px;font-size:12px;background:#fdfcfb;}
+  .cal-cell{min-height:70px;border:1px solid var(--line);border-radius:6px;padding:5px;font-size:12px;background:#fdfcfb;overflow:hidden;}
   .cal-cell.empty{background:transparent;border:none;}
   .cal-cell .daynum{color:var(--muted);font-size:11px;}
   .cal-cell.has-visit{background:var(--accent-light);}
   .cal-cell .vtime{display:block;color:var(--accent);font-size:11px;margin-top:2px;}
-  .cal-nav{display:flex;justify-content:space-between;align-items:center;margin-top:10px;}
-  .cal-nav button{background:none;border:1px solid var(--line);border-radius:5px;padding:5px 12px;cursor:pointer;font-family:inherit;}
+  .cal-nav{display:flex;justify-content:space-between;align-items:center;margin-top:10px;gap:8px;}
+  .cal-nav button{background:none;border:1px solid var(--line);border-radius:5px;padding:8px 14px;cursor:pointer;font-family:inherit;}
   .empty-msg{color:var(--muted);font-style:italic;padding:20px;text-align:center;}
   select#periodType{width:auto;display:inline-block;}
+
+  /* ---------- Tablet (iPad) ---------- */
+  @media (max-width: 900px){
+    body{padding:18px;}
+    .card{padding:16px;}
+    .stat-grid{grid-template-columns:repeat(auto-fit,minmax(130px,1fr));}
+  }
+
+  /* ---------- Mobile phones ---------- */
+  @media (max-width: 640px){
+    body{padding:14px;}
+    h1{font-size:22px;}
+    .sub{font-size:13px;margin-bottom:16px;}
+    nav{gap:6px;margin-bottom:16px;}
+    nav button{flex:1 1 calc(50% - 6px);padding:11px 8px;font-size:13px;text-align:center;}
+    .card{padding:14px;border-radius:8px;}
+    .row{gap:0;}
+    .row > div{min-width:100%;}
+    button.primary{width:100%;}
+    #add-msg{display:block;margin-left:0 !important;margin-top:8px;}
+    button.secondary{width:100%;margin-left:0 !important;}
+    .log-actions{flex-direction:column;align-items:stretch;}
+    .log-actions .btn-group{flex-direction:column;}
+    .log-actions strong{margin-bottom:4px;}
+    .cal-cell{min-height:52px;padding:3px;font-size:10px;}
+    .cal-cell .vtime{font-size:9px;}
+    .cal-grid{gap:4px;}
+    .cal-nav button{padding:8px 10px;font-size:13px;}
+    #cal-title{font-size:14px;}
+    .stat-grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+    .stat{padding:10px;}
+    .stat .num{font-size:18px;}
+
+    /* Card-style tables instead of horizontal rows */
+    table.stackable thead{display:none;}
+    table.stackable, table.stackable tbody{display:block;width:100%;}
+    table.stackable tr{
+      display:block;border:1px solid var(--line);border-radius:8px;
+      padding:6px 10px;margin-bottom:10px;background:#fdfcfb;
+    }
+    table.stackable tr.editing{padding:10px;}
+    table.stackable td{
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+      border-bottom:1px dashed var(--line);padding:7px 0;text-align:right;
+    }
+    table.stackable td:last-child{border-bottom:none;}
+    table.stackable td::before{
+      content:attr(data-label);color:var(--muted);font-size:11px;
+      text-transform:uppercase;letter-spacing:.4px;text-align:left;flex-shrink:0;
+    }
+    table.stackable td.no-label::before{content:'';}
+    table.stackable td.actions-cell{justify-content:flex-end;gap:14px;}
+    table.stackable tr.editing td{display:block;text-align:left;border-bottom:none;padding:0;}
+    table.stackable tr.editing td::before{content:none;}
+  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -108,23 +171,25 @@
 
 <!-- LOG VIEW -->
 <div id="view-log" class="card" style="display:none;">
-  <div style="display:flex;justify-content:space-between;align-items:center;">
+  <div class="log-actions">
     <strong>Full Log</strong>
-    <div>
-      <button class="secondary" id="print-btn" style="margin-top:0;">Download PDF</button>
-      <button class="secondary" id="export-btn" style="margin-top:0;">Export CSV</button>
-      <button class="secondary" id="backup-btn" style="margin-top:0;">Backup (JSON)</button>
-      <button class="secondary" id="restore-btn" style="margin-top:0;">Restore from Backup</button>
+    <div class="btn-group">
+      <button class="secondary" id="print-btn">Download PDF</button>
+      <button class="secondary" id="export-btn">Export CSV</button>
+      <button class="secondary" id="backup-btn">Backup (JSON)</button>
+      <button class="secondary" id="restore-btn">Restore from Backup</button>
       <input type="file" id="restore-file" accept="application/json" style="display:none;">
     </div>
   </div>
   <div id="restore-msg" style="font-size:13px;margin-top:8px;"></div>
-  <table id="log-table">
+  <div class="table-wrap">
+  <table id="log-table" class="stackable">
     <thead>
       <tr><th>Dates</th><th>Start</th><th>End</th><th>Duration</th><th>Notes</th><th></th></tr>
     </thead>
     <tbody id="log-body"></tbody>
   </table>
+  </div>
   <div id="log-empty" class="empty-msg" style="display:none;">No visits logged yet.</div>
 </div>
 
@@ -150,21 +215,23 @@
     </select>
   </div>
   <div class="stat-grid" id="totals-grid"></div>
-  <table style="margin-top:20px;">
+  <div class="table-wrap">
+  <table class="stackable" style="margin-top:20px;">
     <thead><tr><th>Period</th><th>Visits</th><th>Total Time</th></tr></thead>
     <tbody id="summary-body"></tbody>
   </table>
+  </div>
 </div>
 
 <!-- RESTORE CHOICE MODAL -->
 <div id="restore-modal" style="display:none;position:fixed;inset:0;background:rgba(38,36,31,0.5);z-index:50;align-items:center;justify-content:center;">
-  <div style="background:var(--card);border-radius:8px;padding:24px;max-width:420px;width:90%;font-family:Georgia,'Times New Roman',serif;">
+  <div style="background:var(--card);border-radius:8px;padding:24px;max-width:420px;width:90%;max-height:85vh;overflow-y:auto;font-family:Georgia,'Times New Roman',serif;">
     <strong id="modal-title">Restore Backup</strong>
     <p id="modal-text" style="font-size:14px;color:var(--muted);margin:10px 0 18px;"></p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button id="modal-merge" class="primary" style="margin-top:0;">Merge with current log</button>
-      <button id="modal-replace" class="secondary" style="margin-top:0;">Replace current log</button>
-      <button id="modal-cancel" class="secondary" style="margin-top:0;">Cancel</button>
+      <button id="modal-merge" class="primary" style="margin-top:0;flex:1 1 100%;">Merge with current log</button>
+      <button id="modal-replace" class="secondary" style="margin-top:0;flex:1;">Replace current log</button>
+      <button id="modal-cancel" class="secondary" style="margin-top:0;flex:1;">Cancel</button>
     </div>
   </div>
 </div>
@@ -278,12 +345,12 @@ function renderLog(){
       : formatDateNice(v.date);
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${dateLabel}</td>
-      <td>${v.start}</td>
-      <td>${v.end}</td>
-      <td><span class="pill">${fmtDuration(dur)}</span></td>
-      <td>${escapeHtml(v.notes||'')}</td>
-      <td><span class="edit" data-id="${v.id}">edit</span> · <span class="del" data-id="${v.id}">delete</span></td>
+      <td data-label="Dates">${dateLabel}</td>
+      <td data-label="Start">${v.start}</td>
+      <td data-label="End">${v.end}</td>
+      <td data-label="Duration"><span class="pill">${fmtDuration(dur)}</span></td>
+      <td data-label="Notes">${escapeHtml(v.notes||'')}</td>
+      <td class="actions-cell no-label"><span class="edit" data-id="${v.id}">edit</span> · <span class="del" data-id="${v.id}">delete</span></td>
     `;
     body.appendChild(tr);
   });
@@ -833,7 +900,7 @@ function renderSummary(){
   }
   entries.forEach(([key, g])=>{
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${key}</td><td>${g.count}</td><td>${fmtDuration(g.mins)}</td>`;
+    tr.innerHTML = `<td data-label="Period">${key}</td><td data-label="Visits">${g.count}</td><td data-label="Total Time">${fmtDuration(g.mins)}</td>`;
     body.appendChild(tr);
   });
 }
