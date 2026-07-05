@@ -25,12 +25,18 @@
   .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:20px;margin-bottom:20px;}
   label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px;margin-top:12px;}
   input,select,textarea{
-    width:100%;font-family:inherit;font-size:16px;padding:10px 8px;border:1px solid var(--line);
+    width:100%;max-width:100%;min-width:0;font-family:inherit;font-size:16px;padding:10px 8px;border:1px solid var(--line);
     border-radius:5px;background:#fdfcfb;color:var(--ink);
   }
+  /* WebKit/Safari can otherwise impose an intrinsic min width on date/time
+     controls that ignores the CSS width and overflows narrow containers */
+  input[type="date"], input[type="time"], input[type="datetime-local"]{
+    min-width:0;
+    -webkit-min-logical-width:0px;
+  }
   textarea{resize:vertical;min-height:50px;}
-  .row{display:flex;gap:16px;flex-wrap:wrap;}
-  .row > div{flex:1;min-width:160px;}
+  .row{display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:16px;}
+  .row > div{min-width:0;}
   button.primary{
     margin-top:18px;background:var(--accent);color:#fff;border:none;padding:12px 20px;
     border-radius:6px;cursor:pointer;font-size:15px;font-family:inherit;
@@ -89,7 +95,7 @@
     nav button{flex:1 1 calc(50% - 6px);padding:11px 8px;font-size:13px;text-align:center;}
     .card{padding:14px;border-radius:8px;}
     .row{gap:0;}
-    .row > div{min-width:100%;}
+    .row{grid-template-columns:1fr;}
     button.primary{width:100%;}
     #add-msg{display:block;margin-left:0 !important;margin-top:8px;}
     button.secondary{width:100%;margin-left:0 !important;}
