@@ -28,13 +28,14 @@
     width:100%;max-width:100%;min-width:0;font-family:inherit;font-size:16px;padding:10px 8px;border:1px solid var(--line);
     border-radius:5px;background:#fdfcfb;color:var(--ink);box-sizing:border-box;overflow:hidden;
   }
-  /* iOS Safari's native date/time control can render a few pixels wider than
-     the box you give it, ignoring width:100% — clip that excess so it can't
-     visually poke past the input's own rounded corners or the card's edge */
+  /* iOS Safari's native date/time control can lay itself out wider than the
+     box you give it (ignoring width:100%), and this isn't just paint overflow
+     — overflow:hidden on ancestors doesn't reliably contain it. The fix
+     (scoped to small screens, where this bug actually shows up) is to strip
+     the native OS chrome so the control follows normal CSS box sizing.
+     Tapping still opens the native date/time picker. */
   input[type="date"], input[type="time"], input[type="datetime-local"]{
     min-width:0;
-    -webkit-min-logical-width:0px;
-    overflow:hidden;
   }
   textarea{resize:vertical;min-height:50px;}
   .row{display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:16px;}
@@ -112,6 +113,10 @@
     .card{padding:14px;border-radius:8px;}
     .row{gap:0;}
     .row{grid-template-columns:1fr;}
+    input[type="date"], input[type="time"], input[type="datetime-local"]{
+      -webkit-appearance:none;
+      appearance:none;
+    }
     button.primary{width:100%;}
     #add-msg{display:block;margin-left:0 !important;margin-top:8px;}
     button.secondary{width:100%;margin-left:0 !important;}
