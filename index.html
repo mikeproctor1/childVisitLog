@@ -52,10 +52,9 @@
   table{width:100%;border-collapse:collapse;font-size:14px;}
   th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);}
   th{color:var(--muted);font-weight:normal;font-size:12px;text-transform:uppercase;letter-spacing:.5px;}
-  /* Let short, fixed-format columns (start/end time, duration, actions) size
-     to their content instead of being squeezed by the flexible Notes/Dates
-     columns — this is what kept them from getting crushed on wide screens */
-
+  /* Let short, fixed-format columns (dates, start/end time, duration, actions)
+     size to their content instead of being squeezed by the flexible Notes
+     column — this is what kept them from getting crushed on wide screens */
   #log-table th:nth-child(1), #log-table td:nth-child(1),
   #log-table th:nth-child(2), #log-table td:nth-child(2),
   #log-table th:nth-child(3), #log-table td:nth-child(3),
