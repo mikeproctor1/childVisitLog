@@ -22,21 +22,23 @@
     -webkit-tap-highlight-color:transparent;
   }
   nav button.active{background:var(--accent);color:#fff;border-color:var(--accent);}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:20px;margin-bottom:20px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:20px;margin-bottom:20px;overflow:hidden;}
   label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px;margin-top:12px;}
   input,select,textarea{
     width:100%;max-width:100%;min-width:0;font-family:inherit;font-size:16px;padding:10px 8px;border:1px solid var(--line);
-    border-radius:5px;background:#fdfcfb;color:var(--ink);
+    border-radius:5px;background:#fdfcfb;color:var(--ink);box-sizing:border-box;overflow:hidden;
   }
-  /* WebKit/Safari can otherwise impose an intrinsic min width on date/time
-     controls that ignores the CSS width and overflows narrow containers */
+  /* iOS Safari's native date/time control can render a few pixels wider than
+     the box you give it, ignoring width:100% — clip that excess so it can't
+     visually poke past the input's own rounded corners or the card's edge */
   input[type="date"], input[type="time"], input[type="datetime-local"]{
     min-width:0;
     -webkit-min-logical-width:0px;
+    overflow:hidden;
   }
   textarea{resize:vertical;min-height:50px;}
   .row{display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:16px;}
-  .row > div{min-width:0;}
+  .row > div{min-width:0;overflow:hidden;}
   button.primary{
     margin-top:18px;background:var(--accent);color:#fff;border:none;padding:12px 20px;
     border-radius:6px;cursor:pointer;font-size:15px;font-family:inherit;
